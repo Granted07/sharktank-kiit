@@ -9,7 +9,7 @@ import {
   useState,
 } from "react";
 import type { Product } from "../data/products";
-import { products } from "../data/products";
+import { products as defaultProducts } from "../data/products";
 
 type CartLine = {
   productId: string;
@@ -23,6 +23,7 @@ type DetailedCartLine = {
 };
 
 type CartContextValue = {
+  catalog: Product[];
   lines: CartLine[];
   detailedLines: DetailedCartLine[];
   itemCount: number;
@@ -31,6 +32,7 @@ type CartContextValue = {
   decrementItem: (productId: string) => void;
   removeItem: (productId: string) => void;
   clearCart: () => void;
+  setCatalog: (items: Product[]) => void;
 };
 
 const STORAGE_KEY = "scanpay-cart";
@@ -40,6 +42,7 @@ const CartContext = createContext<CartContextValue | undefined>(undefined);
 // Provides global cart state and persists it to localStorage for fast return visits.
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [lines, setLines] = useState<CartLine[]>([]);
+  const [catalog, setCatalogState] = useState<Product[]>(defaultProducts);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -64,7 +67,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const detailedLines = useMemo(() => {
     return lines
       .map((line) => {
-        const product = products.find((item) => item.id === line.productId);
+        const product = catalog.find((item) => item.id === line.productId);
         if (!product) return undefined;
         return {
           product,
@@ -73,7 +76,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         } satisfies DetailedCartLine;
       })
       .filter((entry): entry is DetailedCartLine => Boolean(entry));
-  }, [lines]);
+  }, [lines, catalog]);
 
   const subtotal = useMemo(() => {
     return detailedLines.reduce((total, line) => total + line.lineTotal, 0);
@@ -118,8 +121,16 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     setLines([]);
   }, []);
 
+  const setCatalog = useCallback((items: Product[]) => {
+    setCatalogState(items);
+    setLines((prev) =>
+      prev.filter((line) => items.some((product) => product.id === line.productId)),
+    );
+  }, []);
+
   const value = useMemo<CartContextValue>(
     () => ({
+      catalog,
       lines,
       detailedLines,
       itemCount,
@@ -128,8 +139,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       decrementItem,
       removeItem,
       clearCart,
+      setCatalog,
     }),
-    [lines, detailedLines, itemCount, subtotal, addItem, decrementItem, removeItem, clearCart],
+    [catalog, lines, detailedLines, itemCount, subtotal, addItem, decrementItem, removeItem, clearCart, setCatalog],
   );
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;

@@ -2,7 +2,7 @@ export type Product = {
   id: string;
   name: string;
   price: number;
-  category: "Fresh" | "Snacks" | "Drinks" | "Household" | "Personal Care";
+  category: string;
   imageAlt?: string;
 };
 
