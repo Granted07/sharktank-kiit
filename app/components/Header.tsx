@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useCart } from "./CartProvider";
-import { formatCurrency } from "../lib/currency";
 
 const STORE_NAME = "NexTop";
 
@@ -27,7 +26,7 @@ export function Header() {
             {itemCount}
           </span>
           <span>
-            Cart | {formatCurrency(subtotal)}
+            Cart | ${subtotal.toFixed(2)}
           </span>
         </Link>
       </div>

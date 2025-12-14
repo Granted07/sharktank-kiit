@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useCart } from "../components/CartProvider";
-import { formatCurrency } from "../lib/currency";
 
 const TAX_RATE = 0.0825;
 
@@ -47,7 +46,7 @@ export default function CartPage() {
                 </h2>
                 <p className="text-sm text-slate-400">{product.category}</p>
                 <p className="mt-2 text-sm text-slate-400">
-                  {formatCurrency(product.price)} each
+                  ${product.price.toFixed(2)} each
                 </p>
                 <button
                   type="button"
@@ -78,7 +77,7 @@ export default function CartPage() {
                   </button>
                 </div>
                 <p className="text-sm font-semibold text-slate-100">
-                  {formatCurrency(lineTotal)}
+                  ${lineTotal.toFixed(2)}
                 </p>
               </div>
             </li>
@@ -91,15 +90,15 @@ export default function CartPage() {
         <dl className="mt-4 space-y-2 text-sm text-slate-400">
           <div className="flex justify-between">
             <dt>Items</dt>
-            <dd>{formatCurrency(subtotal)}</dd>
+            <dd>${subtotal.toFixed(2)}</dd>
           </div>
           <div className="flex justify-between">
             <dt>Estimated tax</dt>
-            <dd>{formatCurrency(estimatedTax)}</dd>
+            <dd>${estimatedTax.toFixed(2)}</dd>
           </div>
           <div className="flex justify-between border-t border-dashed border-slate-700 pt-2 text-base font-semibold text-slate-100">
             <dt>Total due</dt>
-            <dd>{formatCurrency(total)}</dd>
+            <dd>${total.toFixed(2)}</dd>
           </div>
         </dl>
       </section>

@@ -4,7 +4,6 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCart } from "../components/CartProvider";
-import { formatCurrency } from "../lib/currency";
 
 const TAX_RATE = 0.0825;
 
@@ -90,22 +89,22 @@ export default function PaymentPage() {
               <span>
                 {product.name} x {quantity}
               </span>
-              <span>{formatCurrency(lineTotal)}</span>
+              <span>${lineTotal.toFixed(2)}</span>
             </li>
           ))}
         </ul>
         <div className="mt-4 space-y-1 text-sm text-slate-400">
           <div className="flex justify-between">
             <span>Items</span>
-            <span>{formatCurrency(subtotal)}</span>
+            <span>${subtotal.toFixed(2)}</span>
           </div>
           <div className="flex justify-between">
             <span>Estimated tax</span>
-            <span>{formatCurrency(estimatedTax)}</span>
+            <span>${estimatedTax.toFixed(2)}</span>
           </div>
           <div className="flex justify-between border-t border-dashed border-slate-700 pt-2 text-base font-semibold text-slate-100">
             <span>Total due</span>
-            <span>{formatCurrency(total)}</span>
+            <span>${total.toFixed(2)}</span>
           </div>
         </div>
       </section>
@@ -118,7 +117,7 @@ export default function PaymentPage() {
       >
         {isSubmitting
           ? "Processing..."
-          : `Confirm & Pay ${formatCurrency(total)}`}
+          : `Confirm & Pay $${total.toFixed(2)}`}
       </button>
     </div>
   );

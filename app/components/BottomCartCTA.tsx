@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useCart } from "./CartProvider";
-import { formatCurrency } from "../lib/currency";
 
 // Anchors the primary action near the thumb when browsing on mobile devices.
 export function BottomCartCTA() {
@@ -18,7 +17,7 @@ export function BottomCartCTA() {
       >
         <span className="text-sm uppercase tracking-wide">View Cart</span>
         <span className="text-base font-semibold">
-          {itemCount} | {formatCurrency(subtotal)}
+          {itemCount} | ${subtotal.toFixed(2)}
         </span>
       </Link>
     </div>

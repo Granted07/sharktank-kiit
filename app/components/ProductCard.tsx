@@ -2,7 +2,6 @@
 
 import { useCart } from "./CartProvider";
 import type { Product } from "../data/products";
-import { formatCurrency } from "../lib/currency";
 
 type ProductCardProps = {
   product: Product;
@@ -25,7 +24,7 @@ export function ProductCard({ product }: ProductCardProps) {
       </div>
       <div className="mt-4 flex items-center justify-between">
         <span className="text-lg font-semibold text-slate-100">
-          {formatCurrency(product.price)}
+          ${product.price.toFixed(2)}
         </span>
         <button
           type="button"
