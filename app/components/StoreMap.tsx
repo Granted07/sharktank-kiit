@@ -122,6 +122,8 @@ export function StoreMap({ highlight }: { highlight?: Highlight | null }) {
   const activeAisle = getAisleByLabel(normalized.aisle ?? undefined);
   const activeShelf = getShelfByCode(normalized.shelf ?? undefined);
   const suggestedPath = buildSuggestedPath(activeShelf);
+  // Map modes: overview shows structural context only, focus reveals guidance around the active selection.
+  const isOverviewMode = !activeZone && !activeAisle && !activeShelf;
 
   // Precompute shelf offsets relative to their aisle so we can anchor markers to the aisle group.
   const shelfOffsets = new Map<string, { x: number; y: number }>();
@@ -167,7 +169,7 @@ export function StoreMap({ highlight }: { highlight?: Highlight | null }) {
           a real map zoom rather than reflowing like a web layout.
         */}
         <svg
-          viewBox="0 0 100 70"
+          viewBox="0 0 100 75"
           preserveAspectRatio="xMidYMid meet"
           className="h-full w-full"
           role="img"
@@ -180,8 +182,8 @@ export function StoreMap({ highlight }: { highlight?: Highlight | null }) {
               <stop offset="70%" stopColor="rgba(15,23,42,0)" />
             </radialGradient>
           </defs>
-          <rect x={0} y={0} width={100} height={70} fill="#0b162d" />
-          <rect x={0} y={0} width={100} height={70} fill="url(#floorGlow)" />
+          <rect x={0} y={0} width={100} height={75} fill="#0b162d" />
+          <rect x={0} y={0} width={100} height={75} fill="url(#floorGlow)" />
 
           {ZONES.map((zone) => {
             const isZoneActive = zone === activeZone || zone === activeZoneFromShelf;
@@ -191,7 +193,10 @@ export function StoreMap({ highlight }: { highlight?: Highlight | null }) {
             const zoneHasActiveShelf = Boolean(
               activeShelf && zone.aisles.includes(activeShelf.aisle),
             );
-            const showZoneLabel = isDesktop || isZoneActive;
+            // Overview mode keeps all zone titles visible; focus mode isolates the active zone family.
+            const showZoneLabel = isOverviewMode
+              ? true
+              : isZoneActive || zoneHasActiveAisle || zoneHasActiveShelf;
             const zoneOpacity = zoneHasActiveShelf
               ? 0.45
               : zoneHasActiveAisle
@@ -231,10 +236,8 @@ export function StoreMap({ highlight }: { highlight?: Highlight | null }) {
           {AISLES.map((aisle) => {
             const isAisleActive = aisle === activeAisle || aisle.label === activeShelf?.aisle;
             const parentZone = ZONES.find((zone) => zone.aisles.includes(aisle.label));
-            const shouldShowAisleLabel =
-              isDesktop ||
-              (isTablet && isAisleActive) ||
-              (isMobile && activeShelf && aisle.label === activeShelf.aisle);
+            // Focus mode surfaces only the active aisle label while keeping overview uncluttered.
+            const shouldShowAisleLabel = !isOverviewMode && isAisleActive;
             const aisleMidX = aisle.bounds.x + aisle.bounds.width / 2;
             const aislePrefersLeft = aisleMidX > 50;
             const aisleLabelX = aislePrefersLeft
@@ -267,58 +270,63 @@ export function StoreMap({ highlight }: { highlight?: Highlight | null }) {
                   </text>
                 ) : null}
 
-                {SHELVES.filter((shelf) => shelf.aisle === aisle.label).map((shelf) => {
-                  const offset = shelfOffsets.get(shelf.code);
-                  if (!offset) return null;
-                  const isShelfActive = shelf === activeShelf;
-                  const shouldShowShelfLabel =
-                    isShelfActive || (isDesktop && !activeShelf);
-                  const renderShelfLabel = shouldShowShelfLabel || (isTablet && isShelfActive);
-                  const prefersLeft = aislePrefersLeft;
-                  const labelAnchorX = prefersLeft
-                    ? offset.x - SHELF_LABEL_GUTTER
-                    : offset.x + SHELF_LABEL_GUTTER;
-                  const leaderX = prefersLeft
-                    ? labelAnchorX + SHELF_LEADER_LENGTH
-                    : labelAnchorX - SHELF_LEADER_LENGTH;
-                  const textAnchor = prefersLeft ? "end" : "start";
-                  return (
-                    <g key={shelf.code} opacity={isShelfActive ? 1 : 0.65}>
-                      <circle
-                        cx={offset.x}
-                        cy={offset.y}
-                        r={2.2}
-                        fill={isShelfActive ? "rgba(34,211,238,0.9)" : "rgba(15,23,42,0.92)"}
-                        stroke={isShelfActive ? "rgba(165,243,252,0.9)" : "rgba(148,163,184,0.85)"}
-                        strokeWidth={0.45}
-                      />
-                      {renderShelfLabel ? (
-                        <g>
-                          {/* Leader line keeps the offset label anchored to the exact shelf marker. */}
-                          <line
-                            x1={offset.x}
-                            y1={offset.y}
-                            x2={leaderX}
-                            y2={offset.y}
-                            stroke={isShelfActive ? "rgba(165,243,252,0.9)" : "rgba(148,163,184,0.75)"}
-                            strokeWidth={0.35}
+                {!isOverviewMode
+                  ? SHELVES.filter((shelf) => shelf.aisle === aisle.label).map((shelf) => {
+                      const offset = shelfOffsets.get(shelf.code);
+                      if (!offset) return null;
+                      const isShelfActive = shelf === activeShelf;
+                      // Only the active shelf keeps its label in focus mode; others remain as wayfinding dots.
+                      const renderShelfLabel = isShelfActive;
+                      const prefersLeft = aislePrefersLeft;
+                      const labelAnchorX = prefersLeft
+                        ? offset.x - SHELF_LABEL_GUTTER
+                        : offset.x + SHELF_LABEL_GUTTER;
+                      const leaderX = prefersLeft
+                        ? labelAnchorX + SHELF_LEADER_LENGTH
+                        : labelAnchorX - SHELF_LEADER_LENGTH;
+                      const textAnchor = prefersLeft ? "end" : "start";
+                      return (
+                        <g key={shelf.code} opacity={isShelfActive ? 1 : 0.65}>
+                          <circle
+                            cx={offset.x}
+                            cy={offset.y}
+                            r={2.2}
+                            fill={isShelfActive ? "rgba(34,211,238,0.9)" : "rgba(15,23,42,0.92)"}
+                            stroke={isShelfActive ? "rgba(165,243,252,0.9)" : "rgba(148,163,184,0.85)"}
+                            strokeWidth={0.45}
                           />
-                          <text
-                            x={labelAnchorX}
-                            y={offset.y}
-                            dominantBaseline="middle"
-                            textAnchor={textAnchor}
-                            fontSize={2}
-                            fontWeight={600}
-                            fill="#e2e8f0"
-                          >
-                            {shelf.code}
-                          </text>
+                          {renderShelfLabel ? (
+                            <g>
+                              {/* Leader line keeps the offset label anchored to the exact shelf marker. */}
+                              <line
+                                x1={offset.x}
+                                y1={offset.y}
+                                x2={leaderX}
+                                y2={offset.y}
+                                stroke={
+                                  isShelfActive
+                                    ? "rgba(165,243,252,0.9)"
+                                    : "rgba(148,163,184,0.75)"
+                                }
+                                strokeWidth={0.35}
+                              />
+                              <text
+                                x={labelAnchorX}
+                                y={offset.y}
+                                dominantBaseline="middle"
+                                textAnchor={textAnchor}
+                                fontSize={2}
+                                fontWeight={600}
+                                fill="#e2e8f0"
+                              >
+                                {shelf.code}
+                              </text>
+                            </g>
+                          ) : null}
                         </g>
-                      ) : null}
-                    </g>
-                  );
-                })}
+                      );
+                    })
+                  : null}
               </g>
             );
           })}
@@ -360,7 +368,7 @@ export function StoreMap({ highlight }: { highlight?: Highlight | null }) {
           )}
 
           {isDesktop ? (
-            <g transform="translate(70 64)" opacity={0.85}>
+            <g transform="translate(70 67)" opacity={0.85}>
               <rect
                 width={26}
                 height={6}
